@@ -1,0 +1,62 @@
+# Every push re-runs every lab on both free simulators. The broken designs
+# are part of the check: a run passes only if each break still FAILS where
+# the episode says it does, and every fix still passes.
+name: labs
+on: [push, pull_request]
+
+jobs:
+  ep20-axi-vip:
+    runs-on: ubuntu-latest           # Verilator only: the VIP is classes Icarus can't run
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v4
+        with:
+          version: '2026-11-01'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: breaks + 25-seed regression (verilator)
+        working-directory: ep20-axi-vip
+        run: python3 run.py --sim verilator --seeds 25
+
+  ep24-cdc:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sim: [verilator, icarus]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v4
+        with:
+          version: '2026-11-01'          # the build these labs were verified on
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: breaks + 25-seed regression (${{ matrix.sim }})
+        working-directory: ep24-cdc
+        run: python3 run.py --sim ${{ matrix.sim }} --seeds 25
+
+  ep26-pcie:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sim: [verilator, icarus]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v4
+        with:
+          version: '2026-11-01'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: breaks + 25-seed regression (${{ matrix.sim }})
+        working-directory: ep26-pcie
+        run: python3 run.py --sim ${{ matrix.sim }} --seeds 25
+
+  ep29-formal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v4
+        with:
+          version: '2026-11-01'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: every break, every fix, the final lab (SymbiYosys)
+        working-directory: ep29-formal
+        run: python3 run.py

@@ -1,0 +1,65 @@
+# ep29 -- Break 3: a bounded proof read as a full proof.
+#
+#   sby -f fifo.sby <task>
+#
+# The break: DEPTH 64 with a 6-bit occupancy counter (CW=6, one bit short).
+# bmc20     bounded to depth 20 -> PASS ("no failure within 20 cycles of reset")
+# kind20    k-induction at depth 20 -> UNKNOWN: inconclusive, not a proof
+# bmc80     bounded to depth 80 -> FAIL on cycle 65
+# pdr       an unbounded engine (abc pdr) -> FAIL on cycle 65
+# fixed     CW=7, abc pdr -> PASS, at every depth
+# cov20     guard 1: cover 64 words inside, bound 20 -> UNREACHED (the bound is too shallow)
+# cov80     ...bound 80 -> reached on cycle 65
+# small     guard 2: shrink it -- DEPTH 4, CW 2, bound 20 -> FAIL on cycle 5
+
+[tasks]
+bmc20
+kind20
+bmc80
+pdr
+fixed
+cov20
+cov80
+small
+
+[options]
+bmc20:  mode bmc
+bmc20:  depth 20
+kind20: mode prove
+kind20: depth 20
+bmc80:  mode bmc
+bmc80:  depth 80
+pdr:    mode prove
+fixed:  mode prove
+cov20:  mode cover
+cov20:  depth 20
+cov80:  mode cover
+cov80:  depth 80
+small:  mode bmc
+small:  depth 20
+
+[engines]
+bmc20:  smtbmc yices
+kind20: smtbmc yices
+bmc80:  smtbmc yices
+pdr:    abc pdr
+fixed:  abc pdr
+cov20:  smtbmc yices
+cov80:  smtbmc yices
+small:  smtbmc yices
+
+[script]
+plugin -i slang
+bmc20:  read_slang -G CW=6 fifo.sv fifo_props.sv --top fifo
+kind20: read_slang -G CW=6 fifo.sv fifo_props.sv --top fifo
+bmc80:  read_slang -G CW=6 fifo.sv fifo_props.sv --top fifo
+pdr:    read_slang -G CW=6 fifo.sv fifo_props.sv --top fifo
+fixed:  read_slang -G CW=7 fifo.sv fifo_props.sv --top fifo
+cov20:  read_slang -G CW=7 fifo.sv fifo_props.sv --top fifo
+cov80:  read_slang -G CW=7 fifo.sv fifo_props.sv --top fifo
+small:  read_slang -G DEPTH=4 -G AW=2 -G CW=2 fifo.sv fifo_props.sv --top fifo
+prep -top fifo
+
+[files]
+../rtl/fifo.sv
+../sva/fifo_props.sv

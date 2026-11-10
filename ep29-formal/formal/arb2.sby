@@ -1,0 +1,50 @@
+# ep29 -- the arbiter: Break 1, the fix, Break 2.
+#
+#   sby -f arb2.sby <task>          (run.py runs them all, in episode order)
+#
+# spurious  Break 1: correct RTL, no input assumptions -> FAIL, 3 cycles (spurious)
+# real      the fix's first re-run: assumptions on, buggy RTL -> FAIL, 3 cycles (the cold open)
+# fixed     assumptions on, fixed RTL -> PASS (an unbounded proof, k-induction)
+# over      Break 2: buggy RTL + "never both" -> PASS (and it checked nothing)
+# over_cov  ...the covers under that assumption -> co_both UNREACHED
+# cover     the covers with the honest assumptions -> all reached
+
+[tasks]
+spurious
+real
+fixed
+over
+over_cov
+cover
+
+[options]
+spurious: mode bmc
+spurious: depth 10
+real: mode bmc
+real: depth 10
+fixed: mode prove
+fixed: depth 10
+over: mode prove
+over: depth 10
+over_cov: mode cover
+over_cov: depth 20
+cover: mode cover
+cover: depth 20
+
+[engines]
+smtbmc yices
+
+[script]
+plugin -i slang
+spurious: read_slang -D NO_INPUT_ASSUME arb2.sv arb2_props.sv --top arb2
+real:     read_slang arb2_bad.sv arb2_props.sv --top arb2
+fixed:    read_slang arb2.sv arb2_props.sv --top arb2
+over:     read_slang -D OVER_CONSTRAIN arb2_bad.sv arb2_props.sv --top arb2
+over_cov: read_slang -D OVER_CONSTRAIN arb2_bad.sv arb2_props.sv --top arb2
+cover:    read_slang arb2.sv arb2_props.sv --top arb2
+prep -top arb2
+
+[files]
+../rtl/arb2.sv
+../rtl/broken/arb2_bad.sv
+../sva/arb2_props.sv

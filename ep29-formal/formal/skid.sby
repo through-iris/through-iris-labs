@@ -1,0 +1,33 @@
+# ep29 final lab -- find the bug in the skid buffer.
+#
+# bad     rtl/broken/skid_bad.sv -> one property fails. Which, and why?
+# fixed   rtl/skid.sv -> PASS (unbounded proof)
+# cover   rtl/skid.sv -> every cover reached (the proof checked something)
+
+[tasks]
+bad
+fixed
+cover
+
+[options]
+bad:   mode bmc
+bad:   depth 10
+fixed: mode prove
+fixed: depth 10
+cover: mode cover
+cover: depth 10
+
+[engines]
+smtbmc yices
+
+[script]
+plugin -i slang
+bad:   read_slang skid_bad.sv skid_props.sv --top skid
+fixed: read_slang skid.sv skid_props.sv --top skid
+cover: read_slang skid.sv skid_props.sv --top skid
+prep -top skid
+
+[files]
+../rtl/skid.sv
+../rtl/broken/skid_bad.sv
+../sva/skid_props.sv
